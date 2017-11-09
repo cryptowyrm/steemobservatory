@@ -41,6 +41,9 @@
         now (js/Date.)]
     (> (- cashout now) 0)))
 
+(defn voting-power-to-percent [vp]
+  (js/Math.round (/ vp 100)))
+
 (defn article-item [article]
   (let [cashout (js/Date. (get article "cashout_time"))
         now (js/Date.)
@@ -67,6 +70,15 @@
      ^{:key index}
      [article-item article])])
 
+(defn voting-power [account]
+  (let [vp (voting-power-to-percent (get @account "voting_power"))]
+    [:div
+     [:div {:class "vp-outer"}
+      [:span {:class "vp-percent"
+              :style {:width (str vp "px")}}]]
+     vp
+     "% Voting power"]))
+
 (defn content []
   [:div {:style {:background "#ddd"
                  :padding "20px"}}
@@ -78,7 +90,7 @@
      [:span (get @account "balance")]
      [:span (get @account "sbd_balance")]
      [:span "Posts: " (get @account "post_count")]
-     [:span "VP: " (get @account "voting_power")]]]
+     [voting-power account]]]
    [list-articles @articles]
    [:button {:on-click getDiscussions}
     "getDiscussions"]

@@ -16,6 +16,19 @@ html {
   padding: 10px;
 }
 
+.vp-outer {
+  display: inline-block;
+  border: 1px solid black;
+  margin-right: 3px;
+  width: 100px;
+}
+
+.vp-percent {
+  background: lightgreen;
+  display: inline-block;
+  height: 10px;
+}
+
 .article-list {
   box-shadow: 0px 2px 3px 0 rgba(0, 0, 0, 0.4);
 }
