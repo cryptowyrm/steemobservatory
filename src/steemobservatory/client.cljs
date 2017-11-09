@@ -17,7 +17,7 @@
   (.then
     (js/steem.database.getDiscussions
       "blog"
-      (clj->js {:limit 10
+      (clj->js {:limit 15
                 :tag "crypticwyrm"}))
     (fn [result]
       (swap! articles
@@ -90,12 +90,13 @@
      [:span (get @account "sbd_balance")]
      [:span "Posts: " (get @account "post_count")]
      [voting-power account]]]
-   [list-articles @articles]
-   [:button {:on-click getDiscussions}
-    "getDiscussions"]
-   [:button {:on-click getAccounts}
-    "getAccounts"]])
+   [list-articles @articles]])
 
 (r/render-component [content]
   (.querySelector js/document "#app"))
+
+(if (empty? @account)
+  (do
+    (getAccounts)
+    (getDiscussions)))
 
