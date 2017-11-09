@@ -86,3 +86,12 @@ body {
   font-size: 14px;
   color: gray;
 }
+
+.article .title {
+  text-decoration: none;
+  color: black;
+}
+
+.article .title:hover {
+  cursor: pointer;
+}

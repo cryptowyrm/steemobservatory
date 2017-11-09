@@ -59,7 +59,9 @@
                       "votes")}
       (get article "net_votes")]
      [:div {:class "right"}
-      [:span {:class "title"}
+      [:a {:class "title"
+           :href (str "https://www.steemit.com" (get article "url"))
+           :target "_blank"}
        (get article "title")]
       [:span {:class "worth"}
        worth]]]))
