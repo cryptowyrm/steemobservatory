@@ -6,6 +6,7 @@
 
 (defonce articles (r/atom []))
 (defonce avatar (r/atom ""))
+(defonce account (r/atom {}))
 
 (defn parseAvatarUrl [account]
   (let [parsed (js/JSON.parse (get account "json_metadata"))
@@ -28,6 +29,8 @@
   (.then
     (js/steem.database.getAccounts (clj->js ["crypticwyrm"]))
     (fn [result]
+      (js/console.log (first result))
+      (reset! account (js->clj (first result)))
       (reset! avatar
         (parseAvatarUrl
           (js->clj (first result)))))
@@ -67,8 +70,15 @@
 (defn content []
   [:div {:style {:background "#ddd"
                  :padding "20px"}}
-   [:img {:src @avatar
-          :style {:width "100px"}}]
+   [:div {:class "user-box"}
+    [:img {:src @avatar
+           :style {:width "120px"}}]
+    [:div {:class "user-info"}
+     [:span "@" (get @account "name")]
+     [:span (get @account "balance")]
+     [:span (get @account "sbd_balance")]
+     [:span "Posts: " (get @account "post_count")]
+     [:span "VP: " (get @account "voting_power")]]]
    [list-articles @articles]
    [:button {:on-click getDiscussions}
     "getDiscussions"]
