@@ -1,0 +1,7 @@
+dev-resources/
+prod-resources/
+target/
+
+.nightlight.edn
+
+.DS_Store
