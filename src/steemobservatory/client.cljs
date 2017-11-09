@@ -80,8 +80,7 @@
      "% Voting power"]))
 
 (defn content []
-  [:div {:style {:background "#ddd"
-                 :padding "20px"}}
+  [:div {:id "content"}
    [:div {:class "user-box"}
     [:img {:src @avatar
            :style {:width "120px"}}]
