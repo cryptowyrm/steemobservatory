@@ -7,6 +7,8 @@
 (defonce articles (r/atom []))
 (defonce avatar (r/atom ""))
 (defonce account (r/atom {}))
+(defonce user-editing (r/atom false))
+(defonce user-name (r/atom "crypticwyrm"))
 
 (defn parseAvatarUrl [account]
   (let [parsed (js/JSON.parse (get account "json_metadata"))
@@ -17,8 +19,8 @@
   (.then
     (js/steem.database.getDiscussions
       "blog"
-      (clj->js {:limit 15
-                :tag "crypticwyrm"}))
+      (clj->js {:limit 100
+                :tag @user-name}))
     (fn [result]
       (swap! articles
         (fn []
@@ -27,14 +29,15 @@
 
 (defn getAccounts []
   (.then
-    (js/steem.database.getAccounts (clj->js ["crypticwyrm"]))
+    (js/steem.database.getAccounts (clj->js [@user-name]))
     (fn [result]
       (js/console.log (first result))
       (reset! account (js->clj (first result)))
       (reset! avatar
         (parseAvatarUrl
           (js->clj (first result)))))
-    (fn [e] (js/console.log e))))
+    (fn [e]
+      (js/console.log e))))
 
 (defn is-article-active [article]
   (let [cashout (js/Date. (get article "cashout_time"))
@@ -87,7 +90,24 @@
     [:img {:src @avatar
            :style {:width "120px"}}]
     [:div {:class "user-info"}
-     [:span "@" (get @account "name")]
+     (if @user-editing
+       [:div
+        [:input {:type "text"
+                 :defaultValue @user-name
+                 :on-change (fn [e]
+                              (reset! user-name (-> e .-target .-value)))}]
+        [:button {:on-click (fn []
+                              (reset! user-editing false)
+                              (getAccounts)
+                              (getDiscussions))}
+         "Ok"]]
+       [:div {:id "user-name-box"}
+        [:span {:id "user-name"
+                :on-click (fn []
+                            (reset! user-editing true))}
+         "@" @user-name]
+        [:span {:id "user-change"}
+         "<- Click to change user"]])
      [:span (get @account "balance")]
      [:span (get @account "sbd_balance")]
      [:span "Posts: " (get @account "post_count")]
