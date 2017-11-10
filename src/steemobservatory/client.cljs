@@ -1,8 +1,5 @@
 (ns steemobservatory.client
-  (:require [reagent.core :as r]
-            [cljs.pprint :as pprint]))
-
-(enable-console-print!)
+  (:require [reagent.core :as r]))
 
 (defonce articles (r/atom []))
 (defonce avatar (r/atom ""))
