@@ -10,6 +10,7 @@
 (defonce user-editing (r/atom false))
 (defonce user-name (r/atom "crypticwyrm"))
 (defonce show-reblogged (r/atom true))
+(defonce dynamic-global-properties (r/atom {}))
 
 (defn loadSettings []
   (if-let [storage (js/localStorage.getItem "settings")]
@@ -33,6 +34,29 @@
     (let [parsed (js/JSON.parse (get account "json_metadata"))
           meta (js->clj parsed)]
       (get-in meta ["profile" "profile_image"]))))
+
+(defn steemPerMvests [total_vesting_fund_steem total_vesting_shares]
+  (/ total_vesting_fund_steem total_vesting_shares))
+
+(defn vestsToSteemPower [vests steem_per_mvests]
+  (* vests steem_per_mvests))
+
+(defn vests2sp [vests]
+  (vestsToSteemPower vests
+                     (steemPerMvests
+                       (js/parseFloat (get @dynamic-global-properties
+                                           "total_vesting_fund_steem"))
+                       (js/parseFloat (get @dynamic-global-properties
+                                           "total_vesting_shares")))))
+
+(defn getDynamicGlobalProperties []
+  (.then
+    (js/steem.database.getDynamicGlobalProperties)
+    (fn [result]
+      (reset! dynamic-global-properties (js->clj result))
+      (js/console.log result))
+    (fn [e]
+      (js/console.log e))))
 
 (defn getDiscussions []
   (.then
@@ -156,7 +180,9 @@
                      :flex-direction "column"}}
        [:span (get @account "balance")]
        [:span (get @account "sbd_balance")]
-       [:span "Posts: " (get @account "post_count")]
+       [:span
+        (.toFixed (vests2sp (js/parseFloat (get @account "vesting_shares"))) 3)
+        " Steem Power"]
        [voting-power account]])]])
 
 (defn list-settings []
@@ -185,6 +211,7 @@
 (if (empty? @account)
   (do
     (loadSettings)
+    (getDynamicGlobalProperties)
     (getAccounts)
     (getDiscussions)))
 
