@@ -9,19 +9,23 @@
 (defonce account (r/atom {}))
 (defonce user-editing (r/atom false))
 (defonce user-name (r/atom "crypticwyrm"))
+(defonce show-reblogged (r/atom true))
 
 (defn loadSettings []
   (if-let [storage (js/localStorage.getItem "settings")]
     (let [parsed (js/JSON.parse storage)
           settings (js->clj parsed)]
       (if-let [username (get settings "user-name")]
-        (reset! user-name username)))))
+        (reset! user-name username))
+      (if (not (nil? (get settings "show-reblogged")))
+        (reset! show-reblogged (get settings "show-reblogged"))))))
 
 (defn saveSettings []
   (if-not (empty? @user-name)
     (js/localStorage.setItem
       "settings"
-      (js/JSON.stringify (clj->js {"user-name" @user-name})))))
+      (js/JSON.stringify (clj->js {"user-name" @user-name
+                                   "show-reblogged" @show-reblogged})))))
 
 (defn parseAvatarUrl [account]
   (if (empty? (get account "json_metadata"))
@@ -79,8 +83,11 @@
         active (> (- cashout now) 0)
         worth (if active
                 (get article "pending_payout_value")
-                (get article "total_payout_value"))]
-    [:div {:class "article"
+                (get article "total_payout_value"))
+        reblogged (not (= (get article "author") @user-name))]
+    [:div {:class (if reblogged
+                    "article reblogged"
+                    "article")
            :on-click (fn []
                        (js/console.log (clj->js article)))}
      [:span {:class (if active
@@ -91,6 +98,8 @@
       [:a {:class "title"
            :href (str "https://www.steemit.com" (get article "url"))
            :target "_blank"}
+       (if reblogged
+         "Reblogged: ")
        (get article "title")]
       [:span {:class "worth"}
        worth]]]))
@@ -150,10 +159,25 @@
        [:span "Posts: " (get @account "post_count")]
        [voting-power account]])]])
 
+(defn list-settings []
+  [:div {:id "list-settings"}
+   [:span
+    [:input {:type "checkbox"
+             :checked @show-reblogged
+             :on-change (fn [e]
+                          (reset! show-reblogged (-> e .-target .-checked))
+                          (saveSettings))}]
+    "Show reblogged"]])
+
 (defn content []
   [:div {:id "content"}
    [user-box]
-   [list-articles @articles]])
+   [list-settings]
+   [list-articles (if @show-reblogged
+                    @articles
+                    (filterv
+                      #(= (get % "author") @user-name)
+                      @articles))]])
 
 (r/render-component [content]
   (.querySelector js/document "#app"))
