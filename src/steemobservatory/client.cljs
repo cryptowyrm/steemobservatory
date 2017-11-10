@@ -11,9 +11,11 @@
 (defonce user-name (r/atom "crypticwyrm"))
 
 (defn parseAvatarUrl [account]
-  (let [parsed (js/JSON.parse (get account "json_metadata"))
-        meta (js->clj parsed)]
-    (get-in meta ["profile" "profile_image"])))
+  (if (empty? (get account "json_metadata"))
+    ""
+    (let [parsed (js/JSON.parse (get account "json_metadata"))
+          meta (js->clj parsed)]
+      (get-in meta ["profile" "profile_image"]))))
 
 (defn getDiscussions []
   (.then
@@ -25,18 +27,29 @@
       (swap! articles
         (fn []
           (map js->clj result))))
-    (fn [e] (js/console.log e))))
+    (fn [e]
+      (reset! articles [])
+      (js/console.log "getDiscussions error")
+      (js/console.log e))))
 
 (defn getAccounts []
   (.then
     (js/steem.database.getAccounts (clj->js [@user-name]))
     (fn [result]
-      (js/console.log (first result))
-      (reset! account (js->clj (first result)))
-      (reset! avatar
-        (parseAvatarUrl
-          (js->clj (first result)))))
+      (if (empty? result)
+        (do
+          (reset! account {})
+          (reset! avatar "")
+          (js/console.log "User doesn't exist"))
+        (do
+          (js/console.log "User does exist")
+          (js/console.log (first result))
+          (reset! account (js->clj (first result)))
+          (reset! avatar
+            (parseAvatarUrl
+              (js->clj (first result)))))))
     (fn [e]
+      (js/console.log "getAccounts error")
       (js/console.log e))))
 
 (defn is-article-active [article]
@@ -84,34 +97,47 @@
      vp
      "% Voting power"]))
 
+(defn user-box []
+  [:div {:class "user-box"}
+   (if (empty? @avatar)
+     [:div {:id "empty-avatar"
+            :style {:width "120px"
+                    :height "120px"}}
+      "No avatar"]
+     [:img {:src @avatar
+            :style {:width "120px"}}])
+   [:div {:class "user-info"}
+    (if @user-editing
+      [:div
+       [:input {:type "text"
+                :defaultValue @user-name
+                :on-change (fn [e]
+                             (reset! user-name (-> e .-target .-value)))}]
+       [:button {:on-click (fn []
+                             (reset! user-editing false)
+                             (getAccounts)
+                             (getDiscussions))}
+        "Ok"]]
+      [:div {:id "user-name-box"}
+       [:span {:id "user-name"
+               :on-click (fn []
+                           (reset! user-editing true))}
+        "@" @user-name]
+       [:span {:id "user-change"}
+        "<- Click to change user"]])
+    (if (empty? @account)
+      [:div
+       [:span "User doesn't exist, check the username"]]
+      [:div {:style {:display "flex"
+                     :flex-direction "column"}}
+       [:span (get @account "balance")]
+       [:span (get @account "sbd_balance")]
+       [:span "Posts: " (get @account "post_count")]
+       [voting-power account]])]])
+
 (defn content []
   [:div {:id "content"}
-   [:div {:class "user-box"}
-    [:img {:src @avatar
-           :style {:width "120px"}}]
-    [:div {:class "user-info"}
-     (if @user-editing
-       [:div
-        [:input {:type "text"
-                 :defaultValue @user-name
-                 :on-change (fn [e]
-                              (reset! user-name (-> e .-target .-value)))}]
-        [:button {:on-click (fn []
-                              (reset! user-editing false)
-                              (getAccounts)
-                              (getDiscussions))}
-         "Ok"]]
-       [:div {:id "user-name-box"}
-        [:span {:id "user-name"
-                :on-click (fn []
-                            (reset! user-editing true))}
-         "@" @user-name]
-        [:span {:id "user-change"}
-         "<- Click to change user"]])
-     [:span (get @account "balance")]
-     [:span (get @account "sbd_balance")]
-     [:span "Posts: " (get @account "post_count")]
-     [voting-power account]]]
+   [user-box]
    [list-articles @articles]])
 
 (r/render-component [content]
