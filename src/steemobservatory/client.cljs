@@ -118,7 +118,8 @@
                     :height "120px"}}
       "No avatar"]
      [:img {:src @avatar
-            :style {:width "120px"}}])
+            :style {:width "120px"
+                    :height "120px"}}])
    [:div {:class "user-info"}
     (if @user-editing
       [:div
