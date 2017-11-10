@@ -6,6 +6,7 @@
 (defonce account (r/atom {}))
 (defonce user-editing (r/atom false))
 (defonce user-name (r/atom "crypticwyrm"))
+(defonce user-name-input (r/atom ""))
 (defonce show-reblogged (r/atom true))
 (defonce dynamic-global-properties (r/atom {}))
 
@@ -156,9 +157,10 @@
        [:input {:type "text"
                 :defaultValue @user-name
                 :on-change (fn [e]
-                             (reset! user-name (-> e .-target .-value)))}]
+                             (reset! user-name-input (-> e .-target .-value)))}]
        [:button {:on-click (fn []
                              (reset! user-editing false)
+                             (reset! user-name @user-name-input)
                              (saveSettings)
                              (getAccounts)
                              (getDiscussions))}
