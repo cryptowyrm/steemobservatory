@@ -68,3 +68,9 @@
     (sift)
     (target)))
 
+(deftask build-simple []
+  (set-env! :resource-paths #{"resources" "prod-resources"})
+  (comp
+    (cljs :optimizations :advanced)
+    (target)))
+

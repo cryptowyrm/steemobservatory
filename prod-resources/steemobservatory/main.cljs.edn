@@ -1,0 +1,1 @@
+{:require [steemobservatory.client], :init-fns [], :compiler-options {:infer-externs true}}

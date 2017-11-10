@@ -1,5 +1,3 @@
-dev-resources/
-prod-resources/
 target/
 
 .nightlight.edn
