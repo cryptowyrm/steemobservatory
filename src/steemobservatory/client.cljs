@@ -10,6 +10,19 @@
 (defonce user-editing (r/atom false))
 (defonce user-name (r/atom "crypticwyrm"))
 
+(defn loadSettings []
+  (if-let [storage (js/localStorage.getItem "settings")]
+    (let [parsed (js/JSON.parse storage)
+          settings (js->clj parsed)]
+      (if-let [username (get settings "user-name")]
+        (reset! user-name username)))))
+
+(defn saveSettings []
+  (if-not (empty? @user-name)
+    (js/localStorage.setItem
+      "settings"
+      (js/JSON.stringify (clj->js {"user-name" @user-name})))))
+
 (defn parseAvatarUrl [account]
   (if (empty? (get account "json_metadata"))
     ""
@@ -115,6 +128,7 @@
                              (reset! user-name (-> e .-target .-value)))}]
        [:button {:on-click (fn []
                              (reset! user-editing false)
+                             (saveSettings)
                              (getAccounts)
                              (getDiscussions))}
         "Ok"]]
@@ -145,6 +159,7 @@
 
 (if (empty? @account)
   (do
+    (loadSettings)
     (getAccounts)
     (getDiscussions)))
 
