@@ -1,6 +1,8 @@
 (ns steemobservatory.client
   (:require [reagent.core :as r]))
 
+(set! *warn-on-infer* true)
+
 (defonce articles (r/atom []))
 (defonce avatar (r/atom ""))
 (defonce account (r/atom {}))
@@ -99,6 +101,10 @@
 (defn voting-power-to-percent [vp]
   (js/Math.round (/ vp 100)))
 
+(defn relative-time [time-string]
+  (let [moment (.moment js/window time-string)]
+    (.fromNow moment)))
+
 (defn article-item [article]
   (let [cashout (js/Date. (get article "cashout_time"))
         now (js/Date.)
@@ -123,8 +129,14 @@
        (if reblogged
          "Reblogged: ")
        (get article "title")]
-      [:span {:class "worth"}
-       worth]]]))
+      [:div
+       [:span {:class "worth"}
+        worth]
+       (if active
+         [:span {:class "payout"
+                 :title (get article "cashout_time")}
+          "Payout "
+          (relative-time (get article "cashout_time"))])]]]))
 
 (defn list-articles [articles]
   [:div {:class "article-list"}
@@ -213,4 +225,3 @@
     (getDynamicGlobalProperties)
     (getAccounts)
     (getDiscussions)))
-
