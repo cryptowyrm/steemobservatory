@@ -129,7 +129,12 @@
                       (get article "active_votes"))]
            ^{:key (get vote "voter")}
            [:tr
-            [:td (get vote "voter")]
+            [:td
+             [:a {:target "_blank"
+                  :href (str
+                          "https://steemit.com/@"
+                          (get vote "voter"))}
+              (get vote "voter")]]
             (if active
               [:td "$" (.toFixed
                          (* (js/parseFloat (get article "pending_payout_value"))
