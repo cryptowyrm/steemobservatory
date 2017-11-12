@@ -111,7 +111,8 @@
      [:h2 "Votes"]
      [:p
       "This shows a list of all the votes that the selected post has received,
-      ordered by the amount of money the vote added to the payout.
+      ordered by the amount of money the vote added to the payout. This is the
+      same order Steemit.com uses when showing votes.
       "]
      [:table
       [:tbody
