@@ -103,13 +103,9 @@
 (defn voting-power-to-percent [vp]
   (js/Math.round (/ vp 100)))
 
-(defn relative-time [time-string]
-  (let [moment (.moment js/window time-string)]
-    (.fromNow moment)))
-
 (defn votes-pane [article]
-  (let [cashout (js/Date. (get article "cashout_time"))
-        now (js/Date.)
+  (let [cashout (js/moment.parseZone (get article "cashout_time"))
+        now (js/moment)
         active (> (- cashout now) 0)]
     [:div {:class "pane votes-pane"}
      [:h2 "Votes"]
@@ -156,8 +152,8 @@
       (reset! right-pane nil))))
 
 (defn article-item [article]
-  (let [cashout (js/Date. (get article "cashout_time"))
-        now (js/Date.)
+  (let [cashout (js/moment.parseZone (get article "cashout_time"))
+        now (js/moment)
         active (> (- cashout now) 0)
         worth (if active
                 (get article "pending_payout_value")
@@ -190,7 +186,7 @@
          [:span {:class "payout"
                  :title (get article "cashout_time")}
           "Payout "
-          (relative-time (get article "cashout_time"))])]]]))
+          (.fromNow cashout)])]]]))
 
 (defn list-articles [articles]
   [:div {:class "article-list"}
