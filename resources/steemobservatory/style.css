@@ -13,7 +13,53 @@ body {
 }
 
 #content {
+  
+}
+
+#content #two-pane {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}
+
+#content #two-pane #left {
   padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.pane {
+  background: white;
+  box-shadow: 0px 2px 3px 0 rgba(0, 0, 0, 0.4);
+}
+
+.votes-pane {
+  padding: 10px;
+}
+
+.votes-pane th {
+  background: silver;
+  padding: 5px;
+}
+
+.votes-pane th.sorted {
+  background: lightblue;
+}
+
+.votes-pane tr:nth-child(even) td {
+  background: #eee;
+}
+
+.votes-pane td {
+  background: #dedede;
+  padding: 5px;
+}
+
+#content #two-pane #right {
+  padding: 20px;
+  padding-left: 20px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .user-box {
@@ -87,11 +133,18 @@ body {
   box-shadow: inset 0px 2px 1px 0 white;
   display: flex;
   padding: 10px;
+  transition: transform 0.25s;
 }
 
 .article.reblogged {
   background: #c7eae3;
   box-shadow: inset 0px 1px 1px 0 lightblue;
+}
+
+.article.selected {
+  background: #e4e4e4;
+  box-shadow: inset 0px 1px 1px 0 white;
+  transform: translateX(20px);
 }
 
 .article .votes {
@@ -109,6 +162,10 @@ body {
 .article .votes.active {
   background: #aaffaa;
   border: 1px solid green;
+}
+
+.article .votes:hover {
+  cursor: pointer;
 }
 
 .article .right {

@@ -11,6 +11,8 @@
 (defonce user-name-input (r/atom ""))
 (defonce show-reblogged (r/atom true))
 (defonce dynamic-global-properties (r/atom {}))
+(defonce right-pane (r/atom nil))
+(defonce selected-article (r/atom nil))
 
 (defn loadSettings []
   (if-let [storage (js/localStorage.getItem "settings")]
@@ -105,6 +107,52 @@
   (let [moment (.moment js/window time-string)]
     (.fromNow moment)))
 
+(defn votes-pane [article]
+  (let [cashout (js/Date. (get article "cashout_time"))
+        now (js/Date.)
+        active (> (- cashout now) 0)]
+    [:div {:class "pane votes-pane"}
+     [:h2 "Votes"]
+     [:p "This shows a list of all the votes that the selected post has received."
+      " Ordered by the amount of money the vote added to the payout."]
+     [:table
+      [:tbody
+       [:tr
+        [:th "User"]
+        (if active
+          [:th.sorted "Worth"]
+          [:th.sorted "rshares"])
+        [:th "When"]]
+       (doall
+         (for [vote (sort-by
+                      #(js/parseInt (get % "rshares"))
+                      #(> %1 %2)
+                      (get article "active_votes"))]
+           ^{:key (get vote "voter")}
+           [:tr
+            [:td (get vote "voter")]
+            (if active
+              [:td "$" (.toFixed
+                         (* (js/parseFloat (get article "pending_payout_value"))
+                            (/ (js/parseInt (get vote "rshares"))
+                               (js/parseFloat (get article "net_rshares"))))
+                         2)
+               " SBD"]
+              [:td (get vote "rshares")])
+            [:td
+             (.toLocaleString (js/Date. (get vote "time")))]]))]]]))
+
+(defn toggle-article [article]
+  (if (or
+        (nil? @selected-article)
+        (not (= @selected-article article)))
+    (do
+      (reset! selected-article article)
+      (reset! right-pane [votes-pane article]))
+    (do
+      (reset! selected-article nil)
+      (reset! right-pane nil))))
+
 (defn article-item [article]
   (let [cashout (js/Date. (get article "cashout_time"))
         now (js/Date.)
@@ -113,14 +161,18 @@
                 (get article "pending_payout_value")
                 (get article "total_payout_value"))
         reblogged (not (= (get article "author") @user-name))]
-    [:div {:class (if reblogged
-                    "article reblogged"
-                    "article")
-           :on-click (fn []
-                       (js/console.log (clj->js article)))}
+    [:div.article {:class (cond
+                            reblogged "reblogged"
+                            (= article @selected-article) "selected")
+                   :on-click (fn []
+                               #_(toggle-article article)
+                               #_(js/console.log (clj->js article)))}
      [:span {:class (if active
                       "votes active"
-                      "votes")}
+                      "votes")
+             :title "Click to show list of votes on this article"
+             :on-click (fn [e]
+                         (toggle-article article))}
       (get article "net_votes")]
      [:div {:class "right"}
       [:a {:class "title"
@@ -155,14 +207,15 @@
 
 (defn user-box []
   [:div {:class "user-box"}
-   (if (empty? @avatar)
-     [:div {:id "empty-avatar"
-            :style {:width "120px"
-                    :height "120px"}}
-      "No avatar"]
-     [:img {:src @avatar
-            :style {:width "120px"
-                    :height "120px"}}])
+   [:div {:class "user-avatar"}
+    (if (empty? @avatar)
+      [:div {:id "empty-avatar"
+             :style {:width "120px"
+                     :height "120px"}}
+       "No avatar"]
+      [:img {:src @avatar
+             :style {:width "120px"
+                     :height "120px"}}])]
    [:div {:class "user-info"}
     (if @user-editing
       [:div
@@ -208,13 +261,18 @@
 
 (defn content []
   [:div {:id "content"}
-   [user-box]
-   [list-settings]
-   [list-articles (if @show-reblogged
-                    @articles
-                    (filterv
-                      #(= (get % "author") @user-name)
-                      @articles))]])
+   [:div {:id "two-pane"}
+    [:div {:id "left"}
+     [user-box]
+     [list-settings]
+     [list-articles (if @show-reblogged
+                      @articles
+                      (filterv
+                        #(= (get % "author") @user-name)
+                        @articles))]]
+    (if (not (nil? @right-pane))
+      [:div {:id "right"}
+       @right-pane])]])
 
 (r/render-component [content]
   (.querySelector js/document "#app"))
