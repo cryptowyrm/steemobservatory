@@ -152,7 +152,12 @@
         (not (= @selected-article article)))
     (do
       (reset! selected-article article)
-      (reset! right-pane [votes-pane article]))
+      (reset! right-pane [votes-pane article])
+      (js/setTimeout
+        (fn []
+          (if-let [right (.querySelector js/document "#right")]
+            (set! (.-scrollTop right) 0)))
+        0))
     (do
       (reset! selected-article nil)
       (reset! right-pane nil))))
