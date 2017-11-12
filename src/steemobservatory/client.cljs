@@ -113,8 +113,10 @@
         active (> (- cashout now) 0)]
     [:div {:class "pane votes-pane"}
      [:h2 "Votes"]
-     [:p "This shows a list of all the votes that the selected post has received."
-      " Ordered by the amount of money the vote added to the payout."]
+     [:p
+      "This shows a list of all the votes that the selected post has received,
+      ordered by the amount of money the vote added to the payout.
+      "]
      [:table
       [:tbody
        [:tr
