@@ -1,5 +1,9 @@
 (ns steemobservatory.client
-  (:require [reagent.core :as r]))
+  (:require [cljsjs.material-ui]
+            [cljs-react-material-ui.core :refer [get-mui-theme color]]
+            [cljs-react-material-ui.reagent :as ui]
+            [cljs-react-material-ui.icons :as ic]
+            [reagent.core :as r]))
 
 (set! *warn-on-infer* true)
 
@@ -316,28 +320,44 @@
 
 (defn list-settings []
   [:div {:id "list-settings"}
-   [:span
-    [:input {:type "checkbox"
-             :checked @show-reblogged
-             :on-change (fn [e]
-                          (reset! show-reblogged (-> e .-target .-checked))
-                          (saveSettings))}]
-    "Show reblogged"]])
+   [:span {:style {:display "inline-block"}}
+    [ui/toggle {:toggled @show-reblogged
+                :label "Show reblogged"
+                :on-toggle (fn [e]
+                             (reset! show-reblogged (-> e .-target .-checked))
+                             (saveSettings))}]]])
+
+; Example with various components
+(defn header []
+  [:div
+   [ui/app-bar
+    {:title "Steem Observatory"
+     :show-menu-icon-button false
+     :icon-element-right (r/as-element
+                           [:a {:target "_blank"
+                                :href "https://steemit.com/created/steemobservatory"}
+                            [ui/icon-button
+                             (ic/action-help {:color :white})]])}]])
 
 (defn content []
-  [:div {:id "content"}
-   [:div {:id "two-pane"}
-    [:div {:id "left"}
-     [user-box]
-     [list-settings]
-     [list-articles (if @show-reblogged
-                      @articles
-                      (filterv
-                        #(= (get % "author") @user-name)
-                        @articles))]]
-    (if (not (nil? @selected-article))
-      [:div {:id "right"}
-       [votes-pane @selected-article]])]])
+  [ui/mui-theme-provider
+   {:mui-theme (get-mui-theme
+                 {:palette {:primary1-color (color :indigo500)
+                            :canvas-color (color :grey300)}})}
+   [:div {:id "content"}
+    [header]
+    [ui/paper {:id "two-pane"}
+     [:div {:id "left"}
+      [user-box]
+      [list-settings]
+      [list-articles (if @show-reblogged
+                       @articles
+                       (filterv
+                         #(= (get % "author") @user-name)
+                         @articles))]]
+     (if (not (nil? @selected-article))
+       [:div {:id "right"}
+        [votes-pane @selected-article]])]]])
 
 (r/render-component [content]
   (.querySelector js/document "#app"))

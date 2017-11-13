@@ -19,7 +19,11 @@ body {
 #content #two-pane {
   display: flex;
   flex-direction: row;
-  height: 100%;
+  position: fixed;
+  top: 65px;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
 }
 
 #content #two-pane #left {
