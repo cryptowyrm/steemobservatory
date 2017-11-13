@@ -232,6 +232,11 @@
        [:button {:on-click (fn []
                              (reset! user-editing false)
                              (reset! user-name @user-name-input)
+                             (if (or (nil? @selected-article)
+                                     (not (=
+                                             @user-name
+                                             (get @selected-article "author"))))
+                               (reset! selected-article nil))
                              (saveSettings)
                              (getAccounts)
                              (getDiscussions))}
