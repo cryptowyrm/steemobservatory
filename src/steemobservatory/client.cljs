@@ -226,7 +226,7 @@
     (if @user-editing
       [:div
        [:input {:type "text"
-                :defaultValue @user-name
+                :defaultValue @user-name-input
                 :on-change (fn [e]
                              (reset! user-name-input (-> e .-target .-value)))}]
        [:button {:on-click (fn []
@@ -239,6 +239,7 @@
       [:div {:id "user-name-box"}
        [:span {:id "user-name"
                :on-click (fn []
+                           (reset! user-name-input @user-name)
                            (reset! user-editing true))}
         "@" @user-name]
        [:span {:id "user-change"}
