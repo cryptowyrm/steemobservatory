@@ -11,7 +11,6 @@
 (defonce user-name-input (r/atom ""))
 (defonce show-reblogged (r/atom true))
 (defonce dynamic-global-properties (r/atom {}))
-(defonce right-pane (r/atom nil))
 (defonce selected-article (r/atom nil))
 
 (defn loadSettings []
@@ -152,15 +151,13 @@
         (not (= @selected-article article)))
     (do
       (reset! selected-article article)
-      (reset! right-pane [votes-pane article])
       (js/setTimeout
         (fn []
           (if-let [right (.querySelector js/document "#right")]
             (set! (.-scrollTop right) 0)))
         0))
     (do
-      (reset! selected-article nil)
-      (reset! right-pane nil))))
+      (reset! selected-article nil))))
 
 (defn article-item [article]
   (let [cashout (js/moment.parseZone (get article "cashout_time"))
@@ -279,9 +276,9 @@
                       (filterv
                         #(= (get % "author") @user-name)
                         @articles))]]
-    (if (not (nil? @right-pane))
+    (if (not (nil? @selected-article))
       [:div {:id "right"}
-       @right-pane])]])
+       [votes-pane @selected-article]])]])
 
 (r/render-component [content]
   (.querySelector js/document "#app"))
