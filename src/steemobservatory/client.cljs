@@ -102,12 +102,62 @@
 (defn voting-power-to-percent [vp]
   (js/Math.round (/ vp 100)))
 
+(defn vote-hours-vec [votes]
+  (let [hours (reduce
+                (fn [old vote]
+                  (let [hour (.getHours (js/Date. (str (get vote "time") "Z")))]
+                    (assoc old hour (inc (get old hour)))))
+                (vec (repeat 24 0))
+                votes)
+        sum (count votes)]
+    (map
+      (fn [hour]
+          (vector
+            hour
+            (js/Math.round (* (/ hour sum) 100))))
+      hours)))
+
+(defn votes-per-hour [article]
+  [:div {:style {:overflow-x "auto"
+                 :background "#eee"
+                 :box-shadow "0px 2px 3px 0 rgba(0, 0, 0, 0.4)"}}
+   [:div {:style {:display "flex"
+                  :flex-direction "row"
+                  :align-items "flex-end"
+                  :height 100}}
+    (for [[index [hour percent]] (map-indexed vector (vote-hours-vec (get article "active_votes")))]
+      ^{:key index}
+      [:div {:style {:height percent
+                     :width 20
+                     :margin-right 5
+                     :flex-shrink 0
+                     :background "blue"}
+             :title hour}])]
+   [:div {:style {:display "flex"
+                  :background "#909090"}}
+    [:div {:style {:display "flex"
+                   :flex-direction "row"
+                   :background "#909090"}}
+     (for [hour (vec (range 24))]
+       ^{:key hour}
+       [:div {:style {:width 20
+                      :margin-right 5
+                      :flex-shrink 0
+                      :text-align "center"
+                      :background "silver"}}
+        hour])]]])
+    
+
 (defn votes-pane [article]
   (let [cashout (js/moment.parseZone (get article "cashout_time"))
         now (js/moment)
         active (> (- cashout now) 0)]
     [:div {:class "pane votes-pane"}
      [:h2 "Votes"]
+     [:p
+      "Votes the selected post received during the 24 hours of the day.
+      This helps you see which hours are the most active for your posts."]
+     [votes-per-hour article]
      [:p
       "This shows a list of all the votes that the selected post has received,
       ordered by the amount of money the vote added to the payout. This is the
