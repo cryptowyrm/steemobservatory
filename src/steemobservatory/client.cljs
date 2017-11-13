@@ -169,9 +169,8 @@
                 (get article "pending_payout_value")
                 (get article "total_payout_value"))
         reblogged (not (= (get article "author") @user-name))]
-    [:div.article {:class (cond
-                            reblogged "reblogged"
-                            (= article @selected-article) "selected")
+    [:div.article {:class [(when reblogged "reblogged")
+                           (when (= article @selected-article) "selected")]
                    :on-click (fn []
                                #_(toggle-article article)
                                #_(js/console.log (clj->js article)))}

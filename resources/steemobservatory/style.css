@@ -141,15 +141,15 @@ body {
   transition: transform 0.25s;
 }
 
-.article.reblogged {
-  background: #c7eae3;
-  box-shadow: inset 0px 1px 1px 0 lightblue;
-}
-
 .article.selected {
   background: #e4e4e4;
   box-shadow: inset 0px 1px 1px 0 white;
   transform: translateX(20px);
+}
+
+.article.reblogged {
+  background: #c7eae3;
+  box-shadow: inset 0px 1px 1px 0 lightblue;
 }
 
 .article .votes {
