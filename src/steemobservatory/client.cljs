@@ -143,7 +143,9 @@
                " SBD"]
               [:td (get vote "rshares")])
             [:td
-             (.toLocaleString (js/Date. (get vote "time")))]]))]]]))
+             (.toLocaleString (js/Date. (str
+                                          (get vote "time")
+                                          "Z")))]]))]]]))
 
 (defn toggle-article [article]
   (if (or
@@ -192,7 +194,9 @@
         worth]
        (if active
          [:span {:class "payout"
-                 :title (get article "cashout_time")}
+                 :title (.toLocaleString (js/Date. (str
+                                                     (get article "cashout_time")
+                                                     "Z")))}
           "Payout "
           (.fromNow cashout)])]]]))
 
