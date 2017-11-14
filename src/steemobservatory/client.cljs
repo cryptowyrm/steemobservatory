@@ -16,6 +16,7 @@
 (defonce show-reblogged (r/atom true))
 (defonce dynamic-global-properties (r/atom {}))
 (defonce selected-article (r/atom nil))
+(defonce auto-refresh (r/atom false))
 
 (defn loadSettings []
   (if-let [storage (js/localStorage.getItem "settings")]
@@ -24,14 +25,17 @@
       (if-let [username (get settings "user-name")]
         (reset! user-name username))
       (if (not (nil? (get settings "show-reblogged")))
-        (reset! show-reblogged (get settings "show-reblogged"))))))
+        (reset! show-reblogged (get settings "show-reblogged")))
+      (if (not (nil? (get settings "auto-refresh")))
+        (reset! auto-refresh (get settings "auto-refresh"))))))
 
 (defn saveSettings []
   (if-not (empty? @user-name)
     (js/localStorage.setItem
       "settings"
       (js/JSON.stringify (clj->js {"user-name" @user-name
-                                   "show-reblogged" @show-reblogged})))))
+                                   "show-reblogged" @show-reblogged
+                                   "auto-refresh" @auto-refresh})))))
 
 (defn parseAvatarUrl [account]
   (if (empty? (get account "json_metadata"))
@@ -152,8 +156,9 @@
         hour])]]])
     
 
-(defn votes-pane [article]
-  (let [cashout (js/moment.parseZone (get article "cashout_time"))
+(defn votes-pane [article-id]
+  (let [article (first (filter #(= article-id (get % "id")) @articles))
+        cashout (js/moment.parseZone (get article "cashout_time"))
         now (js/moment)
         active (> (- cashout now) 0)]
     [:div {:class "pane votes-pane"}
@@ -163,7 +168,9 @@
       This helps you see which hours are the most active for your posts."]
      [votes-per-hour article]
      [:p
-      "This shows a list of all the votes that the selected post has received,
+      "This shows a list of all the "
+      (count (get article "active_votes"))
+      " votes that the selected post has received,
       ordered by the amount of money the vote added to the payout. This is the
       same order Steemit.com uses when showing votes.
       "]
@@ -204,9 +211,9 @@
 (defn toggle-article [article]
   (if (or
         (nil? @selected-article)
-        (not (= @selected-article article)))
+        (not (= @selected-article (get article "id"))))
     (do
-      (reset! selected-article article)
+      (reset! selected-article (get article "id"))
       (js/setTimeout
         (fn []
           (if-let [right (.querySelector js/document "#right")]
@@ -224,7 +231,7 @@
                 (get article "total_payout_value"))
         reblogged (not (= (get article "author") @user-name))]
     [:div.article {:class [(when reblogged "reblogged")
-                           (when (= article @selected-article) "selected")]
+                           (when (= (get article "id") @selected-article) "selected")]
                    :on-click (fn []
                                #_(toggle-article article)
                                #_(js/console.log (clj->js article)))}
@@ -289,11 +296,7 @@
        [:button {:on-click (fn []
                              (reset! user-editing false)
                              (reset! user-name @user-name-input)
-                             (if (or (nil? @selected-article)
-                                     (not (=
-                                             @user-name
-                                             (get @selected-article "author"))))
-                               (reset! selected-article nil))
+                             (reset! selected-article nil)
                              (saveSettings)
                              (getAccounts)
                              (getDiscussions))}
@@ -319,12 +322,20 @@
        [voting-power account]])]])
 
 (defn list-settings []
-  [:div {:id "list-settings"}
-   [:span {:style {:display "inline-block"}}
+  [:div {:id "list-settings"
+         :style {:display "flex"
+                 :flex-wrap "wrap"}}
+   [:div {:style {:margin-right 10}}
     [ui/toggle {:toggled @show-reblogged
                 :label "Show reblogged"
                 :on-toggle (fn [e]
                              (reset! show-reblogged (-> e .-target .-checked))
+                             (saveSettings))}]]
+   [:div
+    [ui/toggle {:toggled @auto-refresh
+                :label "Auto refresh (60s)"
+                :on-toggle (fn [e]
+                             (reset! auto-refresh (-> e .-target .-checked))
                              (saveSettings))}]]])
 
 ; Example with various components
@@ -362,9 +373,30 @@
 (r/render-component [content]
   (.querySelector js/document "#app"))
 
+(defn reloadInterval []
+  (js/console.log "Starting reloadInterval...")
+  (js/setInterval
+    (fn []
+      (if @auto-refresh
+        (do
+          (js/console.log "Refreshing global data...")
+          (getDynamicGlobalProperties))))
+    (* 60000 5))
+  (js/setInterval
+    (fn []
+      (if @auto-refresh
+        (do
+          (js/console.log "Refreshing data...")
+          (if (not (empty? @account))
+            (do
+              (getAccounts)
+              (getDiscussions))))))
+    60000))
+
 (if (empty? @account)
   (do
     (loadSettings)
     (getDynamicGlobalProperties)
     (getAccounts)
-    (getDiscussions)))
+    (getDiscussions)
+    (reloadInterval)))
