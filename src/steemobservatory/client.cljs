@@ -58,16 +58,18 @@
                        (js/parseFloat (get @dynamic-global-properties
                                            "total_vesting_shares")))))
 
-(defn getDynamicGlobalProperties []
+(defn getDynamicGlobalProperties [& {:keys [callback]}]
   (.then
     (js/steem.database.getDynamicGlobalProperties)
     (fn [result]
       (reset! dynamic-global-properties (js->clj result))
-      (js/console.log result))
+      (js/console.log "Received dynamic global properties")
+      (if (not (nil? callback)) (callback result)))
     (fn [e]
-      (js/console.log e))))
+      (js/console.log e)
+      (if (not (nil? callback)) (callback e)))))
 
-(defn getDiscussions []
+(defn getDiscussions [& {:keys [callback]}]
   (.then
     (js/steem.database.getDiscussions
       "blog"
@@ -76,13 +78,15 @@
     (fn [result]
       (swap! articles
         (fn []
-          (map js->clj result))))
+          (map js->clj result)))
+      (if (not (nil? callback)) (callback result)))
     (fn [e]
       (reset! articles [])
       (js/console.log "getDiscussions error")
-      (js/console.log e))))
+      (js/console.log e)
+      (if (not (nil? callback)) (callback e)))))
 
-(defn getAccounts []
+(defn getAccounts [& {:keys [callback]}]
   (.then
     (js/steem.database.getAccounts (clj->js [@user-name]))
     (fn [result]
@@ -93,14 +97,16 @@
           (js/console.log "User doesn't exist"))
         (do
           (js/console.log "User does exist")
-          (js/console.log (first result))
+          (js/console.log "Received account")
           (reset! account (js->clj (first result)))
           (reset! avatar
             (parseAvatarUrl
-              (js->clj (first result)))))))
+              (js->clj (first result))))))
+      (if (not (nil? callback)) (callback result)))
     (fn [e]
       (js/console.log "getAccounts error")
-      (js/console.log e))))
+      (js/console.log e)
+      (if (not (nil? callback)) (callback e)))))
 
 (defn is-article-active [article]
   (let [cashout (js/Date. (get article "cashout_time"))
@@ -373,25 +379,27 @@
 (r/render-component [content]
   (.querySelector js/document "#app"))
 
+(defn global-interval []
+  (if @auto-refresh
+    (do
+      (js/console.log "Refreshing global data...")
+      (getDynamicGlobalProperties)))
+  (js/setTimeout global-interval (* 60000 5)))
+
+(defn user-interval []
+  (if @auto-refresh
+    (do
+      (js/console.log "Refreshing data...")
+      (if (not (empty? @account))
+        (do
+          (getAccounts)
+          (getDiscussions)))))
+  (js/setTimeout user-interval (* 60000 1)))
+
 (defn reloadInterval []
-  (js/console.log "Starting reloadInterval...")
-  (js/setInterval
-    (fn []
-      (if @auto-refresh
-        (do
-          (js/console.log "Refreshing global data...")
-          (getDynamicGlobalProperties))))
-    (* 60000 5))
-  (js/setInterval
-    (fn []
-      (if @auto-refresh
-        (do
-          (js/console.log "Refreshing data...")
-          (if (not (empty? @account))
-            (do
-              (getAccounts)
-              (getDiscussions))))))
-    60000))
+  (js/console.log "Starting reload intervals...")
+  (js/setTimeout global-interval (* 60000 5))
+  (js/setTimeout user-interval (* 60000 1)))
 
 (if (empty? @account)
   (do
