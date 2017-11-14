@@ -255,8 +255,8 @@
 
 (defn list-articles [articles]
   [:div {:class "article-list"}
-   (for [[index article] (map-indexed vector articles)]
-     ^{:key index}
+   (for [article articles]
+     ^{:key (get article "id")}
      [article-item article])])
 
 (defn voting-power [account]
