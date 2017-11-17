@@ -24,9 +24,9 @@
           settings (js->clj parsed)]
       (if-let [username (get settings "user-name")]
         (reset! user-name username))
-      (if (not (nil? (get settings "show-reblogged")))
+      (if-not (nil? (get settings "show-reblogged"))
         (reset! show-reblogged (get settings "show-reblogged")))
-      (if (not (nil? (get settings "auto-refresh")))
+      (if-not (nil? (get settings "auto-refresh"))
         (reset! auto-refresh (get settings "auto-refresh"))))))
 
 (defn saveSettings []
@@ -64,10 +64,10 @@
     (fn [result]
       (reset! dynamic-global-properties (js->clj result))
       (js/console.log "Received dynamic global properties")
-      (if (not (nil? callback)) (callback result)))
+      (if-not (nil? callback) (callback result)))
     (fn [e]
       (js/console.log e)
-      (if (not (nil? callback)) (callback e)))))
+      (if-not (nil? callback) (callback e)))))
 
 (defn getDiscussions [& {:keys [callback]}]
   (.then
@@ -79,12 +79,12 @@
       (swap! articles
         (fn []
           (map js->clj result)))
-      (if (not (nil? callback)) (callback result)))
+      (if-not (nil? callback) (callback result)))
     (fn [e]
       (reset! articles [])
       (js/console.log "getDiscussions error")
       (js/console.log e)
-      (if (not (nil? callback)) (callback e)))))
+      (if-not (nil? callback) (callback e)))))
 
 (defn getAccounts [& {:keys [callback]}]
   (.then
@@ -102,11 +102,11 @@
           (reset! avatar
             (parseAvatarUrl
               (js->clj (first result))))))
-      (if (not (nil? callback)) (callback result)))
+      (if-not (nil? callback) (callback result)))
     (fn [e]
       (js/console.log "getAccounts error")
       (js/console.log e)
-      (if (not (nil? callback)) (callback e)))))
+      (if-not (nil? callback) (callback e)))))
 
 (defn is-article-active [article]
   (let [cashout (js/Date. (get article "cashout_time"))
@@ -372,7 +372,7 @@
                        (filterv
                          #(= (get % "author") @user-name)
                          @articles))]]
-     (if (not (nil? @selected-article))
+     (if-not (nil? @selected-article)
        [:div {:id "right"}
         [votes-pane @selected-article]])]]])
 
@@ -380,20 +380,17 @@
   (.querySelector js/document "#app"))
 
 (defn global-interval []
-  (if @auto-refresh
-    (do
-      (js/console.log "Refreshing global data...")
-      (getDynamicGlobalProperties)))
+  (when @auto-refresh
+    (js/console.log "Refreshing global data...")
+    (getDynamicGlobalProperties))
   (js/setTimeout global-interval (* 60000 5)))
 
 (defn user-interval []
-  (if @auto-refresh
-    (do
-      (js/console.log "Refreshing data...")
-      (if (not (empty? @account))
-        (do
-          (getAccounts)
-          (getDiscussions)))))
+  (when @auto-refresh
+    (js/console.log "Refreshing data...")
+    (when-not (empty? @account)
+      (getAccounts)
+      (getDiscussions)))
   (js/setTimeout user-interval (* 60000 1)))
 
 (defn reloadInterval []
