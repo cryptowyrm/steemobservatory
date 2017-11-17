@@ -7,20 +7,24 @@
 
 (set! *warn-on-infer* true)
 
-(defonce articles (r/atom []))
-(defonce avatar (r/atom ""))
-(defonce account (r/atom {}))
-(defonce user-editing (r/atom false))
-(defonce user-name (r/atom "crypticwyrm"))
-(defonce user-name-input (r/atom ""))
-(defonce show-reblogged (r/atom true))
-(defonce dynamic-global-properties (r/atom {}))
-(defonce selected-article (r/atom nil))
-(defonce auto-refresh (r/atom false))
+(defonce
+  app-state
+  (r/atom {:articles []
+           :avatar ""
+           :account {}
+           :user-editing false
+           :user-name "crypticwyrm"
+           :show-reblogged true
+           :dynamic-global-properties {}
+           :selected-article nil
+           :auto-refresh false}))
 
 (defn loadSettings []
   (if-let [storage (js/localStorage.getItem "settings")]
-    (let [parsed (js/JSON.parse storage)
+    (let [user-name (r/cursor app-state [:user-name])
+          show-reblogged (r/cursor app-state [:show-reblogged])
+          auto-refresh (r/cursor app-state [:auto-refresh])
+          parsed (js/JSON.parse storage)
           settings (js->clj parsed)]
       (if-let [username (get settings "user-name")]
         (reset! user-name username))
@@ -30,12 +34,15 @@
         (reset! auto-refresh (get settings "auto-refresh"))))))
 
 (defn saveSettings []
-  (if-not (empty? @user-name)
-    (js/localStorage.setItem
-      "settings"
-      (js/JSON.stringify (clj->js {"user-name" @user-name
-                                   "show-reblogged" @show-reblogged
-                                   "auto-refresh" @auto-refresh})))))
+  (let [user-name (r/cursor app-state [:user-name])
+        show-reblogged (r/cursor app-state [:show-reblogged])
+        auto-refresh (r/cursor app-state [:auto-refresh])]
+    (if-not (empty? @user-name)
+      (js/localStorage.setItem
+        "settings"
+        (js/JSON.stringify (clj->js {"user-name" @user-name
+                                     "show-reblogged" @show-reblogged
+                                     "auto-refresh" @auto-refresh}))))))
 
 (defn parseAvatarUrl [account]
   (if (empty? (get account "json_metadata"))
@@ -51,62 +58,69 @@
   (* vests steem_per_mvests))
 
 (defn vests2sp [vests]
-  (vestsToSteemPower vests
-                     (steemPerMvests
-                       (js/parseFloat (get @dynamic-global-properties
-                                           "total_vesting_fund_steem"))
-                       (js/parseFloat (get @dynamic-global-properties
-                                           "total_vesting_shares")))))
+  (let [dynamic-global-properties (r/cursor app-state [:dynamic-global-properties])]
+    (vestsToSteemPower vests
+                       (steemPerMvests
+                         (js/parseFloat (get @dynamic-global-properties
+                                             "total_vesting_fund_steem"))
+                         (js/parseFloat (get @dynamic-global-properties
+                                             "total_vesting_shares"))))))
 
 (defn getDynamicGlobalProperties [& {:keys [callback]}]
-  (.then
-    (js/steem.database.getDynamicGlobalProperties)
-    (fn [result]
-      (reset! dynamic-global-properties (js->clj result))
-      (js/console.log "Received dynamic global properties")
-      (if-not (nil? callback) (callback result)))
-    (fn [e]
-      (js/console.log e)
-      (if-not (nil? callback) (callback e)))))
+  (let [dynamic-global-properties (r/cursor app-state [:dynamic-global-properties])]
+    (.then
+      (js/steem.database.getDynamicGlobalProperties)
+      (fn [result]
+        (reset! dynamic-global-properties (js->clj result))
+        (js/console.log "Received dynamic global properties")
+        (if-not (nil? callback) (callback result)))
+      (fn [e]
+        (js/console.log e)
+        (if-not (nil? callback) (callback e))))))
 
 (defn getDiscussions [& {:keys [callback]}]
-  (.then
-    (js/steem.database.getDiscussions
-      "blog"
-      (clj->js {:limit 100
-                :tag @user-name}))
-    (fn [result]
-      (swap! articles
-        (fn []
-          (map js->clj result)))
-      (if-not (nil? callback) (callback result)))
-    (fn [e]
-      (reset! articles [])
-      (js/console.log "getDiscussions error")
-      (js/console.log e)
-      (if-not (nil? callback) (callback e)))))
+  (let [articles (r/cursor app-state [:articles])
+        user-name (r/cursor app-state [:user-name])]
+    (.then
+      (js/steem.database.getDiscussions
+        "blog"
+        (clj->js {:limit 100
+                  :tag @user-name}))
+      (fn [result]
+        (swap! articles
+          (fn []
+            (map js->clj result)))
+        (if-not (nil? callback) (callback result)))
+      (fn [e]
+        (reset! articles [])
+        (js/console.log "getDiscussions error")
+        (js/console.log e)
+        (if-not (nil? callback) (callback e))))))
 
 (defn getAccounts [& {:keys [callback]}]
-  (.then
-    (js/steem.database.getAccounts (clj->js [@user-name]))
-    (fn [result]
-      (if (empty? result)
-        (do
-          (reset! account {})
-          (reset! avatar "")
-          (js/console.log "User doesn't exist"))
-        (do
-          (js/console.log "User does exist")
-          (js/console.log "Received account")
-          (reset! account (js->clj (first result)))
-          (reset! avatar
-            (parseAvatarUrl
-              (js->clj (first result))))))
-      (if-not (nil? callback) (callback result)))
-    (fn [e]
-      (js/console.log "getAccounts error")
-      (js/console.log e)
-      (if-not (nil? callback) (callback e)))))
+  (let [avatar (r/cursor app-state [:avatar])
+        account (r/cursor app-state [:account])
+        user-name (r/cursor app-state [:user-name])]
+    (.then
+      (js/steem.database.getAccounts (clj->js [@user-name]))
+      (fn [result]
+        (if (empty? result)
+          (do
+            (reset! account {})
+            (reset! avatar "")
+            (js/console.log "User doesn't exist"))
+          (do
+            (js/console.log "User does exist")
+            (js/console.log "Received account")
+            (reset! account (js->clj (first result)))
+            (reset! avatar
+              (parseAvatarUrl
+                (js->clj (first result))))))
+        (if-not (nil? callback) (callback result)))
+      (fn [e]
+        (js/console.log "getAccounts error")
+        (js/console.log e)
+        (if-not (nil? callback) (callback e))))))
 
 (defn is-article-active [article]
   (let [cashout (js/Date. (get article "cashout_time"))
@@ -163,7 +177,8 @@
     
 
 (defn votes-pane [article-id]
-  (let [article (first (filter #(= article-id (get % "id")) @articles))
+  (let [articles (r/cursor app-state [:articles])
+        article (first (filter #(= article-id (get % "id")) @articles))
         cashout (js/moment.parseZone (get article "cashout_time"))
         now (js/moment)
         active (> (- cashout now) 0)]
@@ -215,21 +230,24 @@
                                           "Z")))]]))]]]))
 
 (defn toggle-article [article]
-  (if (or
-        (nil? @selected-article)
-        (not (= @selected-article (get article "id"))))
-    (do
-      (reset! selected-article (get article "id"))
-      (js/setTimeout
-        (fn []
-          (if-let [right (.querySelector js/document "#right")]
-            (set! (.-scrollTop right) 0)))
-        0))
-    (do
-      (reset! selected-article nil))))
+  (let [selected-article (r/cursor app-state [:selected-article])]
+    (if (or
+          (nil? @selected-article)
+          (not (= @selected-article (get article "id"))))
+      (do
+        (reset! selected-article (get article "id"))
+        (js/setTimeout
+          (fn []
+            (if-let [right (.querySelector js/document "#right")]
+              (set! (.-scrollTop right) 0)))
+          0))
+      (do
+        (reset! selected-article nil)))))
 
 (defn article-item [article]
-  (let [cashout (js/moment.parseZone (get article "cashout_time"))
+  (let [user-name (r/cursor app-state [:user-name])
+        selected-article (r/cursor app-state [:selected-article])
+        cashout (js/moment.parseZone (get article "cashout_time"))
         now (js/moment)
         active (> (- cashout now) 0)
         worth (if active
@@ -282,67 +300,76 @@
      "% Voting power"]))
 
 (defn user-box []
-  [:div {:class "user-box"}
-   [:div {:class "user-avatar"}
-    (if (empty? @avatar)
-      [:div {:id "empty-avatar"
-             :style {:width "120px"
-                     :height "120px"}}
-       "No avatar"]
-      [:img {:src @avatar
-             :style {:width "120px"
-                     :height "120px"}}])]
-   [:div {:class "user-info"}
-    (if @user-editing
-      [:div
-       [:input {:type "text"
-                :defaultValue @user-name-input
-                :on-change (fn [e]
-                             (reset! user-name-input (-> e .-target .-value)))}]
-       [:button {:on-click (fn []
-                             (reset! user-editing false)
-                             (reset! user-name @user-name-input)
-                             (reset! selected-article nil)
-                             (saveSettings)
-                             (getAccounts)
-                             (getDiscussions))}
-        "Ok"]]
-      [:div {:id "user-name-box"}
-       [:span {:id "user-name"
-               :on-click (fn []
-                           (reset! user-name-input @user-name)
-                           (reset! user-editing true))}
-        "@" @user-name]
-       [:span {:id "user-change"}
-        "<- Click to change user"]])
-    (if (empty? @account)
-      [:div
-       [:span "User doesn't exist, check the username"]]
-      [:div {:style {:display "flex"
-                     :flex-direction "column"}}
-       [:span (get @account "balance")]
-       [:span (get @account "sbd_balance")]
-       [:span
-        (.toFixed (vests2sp (js/parseFloat (get @account "vesting_shares"))) 3)
-        " Steem Power"]
-       [voting-power account]])]])
+  (let [avatar (r/cursor app-state [:avatar])
+        account (r/cursor app-state [:account])
+        user-editing (r/cursor app-state [:user-editing])
+        user-name (r/cursor app-state [:user-name])
+        selected-article (r/cursor app-state [:selected-article])
+        user-name-input (r/atom "")]
+    (fn []
+      [:div {:class "user-box"}
+       [:div {:class "user-avatar"}
+        (if (empty? @avatar)
+          [:div {:id "empty-avatar"
+                 :style {:width "120px"
+                         :height "120px"}}
+           "No avatar"]
+          [:img {:src @avatar
+                 :style {:width "120px"
+                         :height "120px"}}])]
+       [:div {:class "user-info"}
+        (if @user-editing
+          [:div
+           [:input {:type "text"
+                    :defaultValue @user-name-input
+                    :on-change (fn [e]
+                                 (reset! user-name-input (-> e .-target .-value)))}]
+           [:button {:on-click (fn []
+                                 (reset! user-editing false)
+                                 (reset! user-name @user-name-input)
+                                 (reset! selected-article nil)
+                                 (saveSettings)
+                                 (getAccounts)
+                                 (getDiscussions))}
+            "Ok"]]
+          [:div {:id "user-name-box"}
+           [:span {:id "user-name"
+                   :on-click (fn []
+                               (reset! user-name-input @user-name)
+                               (reset! user-editing true))}
+            "@" @user-name]
+           [:span {:id "user-change"}
+            "<- Click to change user"]])
+        (if (empty? @account)
+          [:div
+           [:span "User doesn't exist, check the username"]]
+          [:div {:style {:display "flex"
+                         :flex-direction "column"}}
+           [:span (get @account "balance")]
+           [:span (get @account "sbd_balance")]
+           [:span
+            (.toFixed (vests2sp (js/parseFloat (get @account "vesting_shares"))) 3)
+            " Steem Power"]
+           [voting-power account]])]])))
 
 (defn list-settings []
-  [:div {:id "list-settings"
-         :style {:display "flex"
-                 :flex-wrap "wrap"}}
-   [:div {:style {:margin-right 10}}
-    [ui/toggle {:toggled @show-reblogged
-                :label "Show reblogged"
-                :on-toggle (fn [e]
-                             (reset! show-reblogged (-> e .-target .-checked))
-                             (saveSettings))}]]
-   [:div
-    [ui/toggle {:toggled @auto-refresh
-                :label "Auto refresh (60s)"
-                :on-toggle (fn [e]
-                             (reset! auto-refresh (-> e .-target .-checked))
-                             (saveSettings))}]]])
+  (let [show-reblogged (r/cursor app-state [:show-reblogged])
+        auto-refresh (r/cursor app-state [:auto-refresh])]
+    [:div {:id "list-settings"
+           :style {:display "flex"
+                   :flex-wrap "wrap"}}
+     [:div {:style {:margin-right 10}}
+      [ui/toggle {:toggled @show-reblogged
+                  :label "Show reblogged"
+                  :on-toggle (fn [e]
+                               (reset! show-reblogged (-> e .-target .-checked))
+                               (saveSettings))}]]
+     [:div
+      [ui/toggle {:toggled @auto-refresh
+                  :label "Auto refresh (60s)"
+                  :on-toggle (fn [e]
+                               (reset! auto-refresh (-> e .-target .-checked))
+                               (saveSettings))}]]]))
 
 ; Example with various components
 (defn header []
@@ -357,38 +384,42 @@
                              (ic/action-help {:color :white})]])}]])
 
 (defn content []
-  [ui/mui-theme-provider
-   {:mui-theme (get-mui-theme
-                 {:palette {:primary1-color (color :indigo500)
-                            :canvas-color (color :grey300)}})}
-   [:div {:id "content"}
-    [header]
-    [ui/paper {:id "two-pane"}
-     [:div {:id "left"}
-      [user-box]
-      [list-settings]
-      [list-articles (if @show-reblogged
-                       @articles
-                       (filterv
-                         #(= (get % "author") @user-name)
-                         @articles))]]
-     (if-not (nil? @selected-article)
-       [:div {:id "right"}
-        [votes-pane @selected-article]])]]])
+  (let [articles (r/cursor app-state [:articles])
+        user-name (r/cursor app-state [:user-name])
+        selected-article (r/cursor app-state [:selected-article])
+        show-reblogged (r/cursor app-state [:show-reblogged])]
+    [ui/mui-theme-provider
+     {:mui-theme (get-mui-theme
+                   {:palette {:primary1-color (color :indigo500)
+                              :canvas-color (color :grey300)}})}
+     [:div {:id "content"}
+      [header]
+      [ui/paper {:id "two-pane"}
+       [:div {:id "left"}
+        [user-box]
+        [list-settings]
+        [list-articles (if @show-reblogged
+                         @articles
+                         (filterv
+                           #(= (get % "author") @user-name)
+                           @articles))]]
+       (if-not (nil? @selected-article)
+         [:div {:id "right"}
+          [votes-pane @selected-article]])]]]))
 
 (r/render-component [content]
   (.querySelector js/document "#app"))
 
 (defn global-interval []
-  (when @auto-refresh
+  (when (:auto-refresh @app-state)
     (js/console.log "Refreshing global data...")
     (getDynamicGlobalProperties))
   (js/setTimeout global-interval (* 60000 5)))
 
 (defn user-interval []
-  (when @auto-refresh
+  (when (:auto-refresh @app-state)
     (js/console.log "Refreshing data...")
-    (when-not (empty? @account)
+    (when-not (empty? (:account @app-state))
       (getAccounts)
       (getDiscussions)))
   (js/setTimeout user-interval (* 60000 1)))
@@ -398,7 +429,7 @@
   (js/setTimeout global-interval (* 60000 5))
   (js/setTimeout user-interval (* 60000 1)))
 
-(if (empty? @account)
+(if (empty? (:account @app-state))
   (do
     (loadSettings)
     (getDynamicGlobalProperties)
