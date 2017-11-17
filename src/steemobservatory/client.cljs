@@ -72,10 +72,10 @@
       (fn [result]
         (reset! dynamic-global-properties (js->clj result))
         (js/console.log "Received dynamic global properties")
-        (if-not (nil? callback) (callback result)))
+        (if callback (callback result)))
       (fn [e]
         (js/console.log e)
-        (if-not (nil? callback) (callback e))))))
+        (if callback (callback e))))))
 
 (defn getDiscussions [& {:keys [callback]}]
   (let [articles (r/cursor app-state [:articles])
@@ -89,12 +89,12 @@
         (swap! articles
           (fn []
             (map js->clj result)))
-        (if-not (nil? callback) (callback result)))
+        (if callback (callback result)))
       (fn [e]
         (reset! articles [])
         (js/console.log "getDiscussions error")
         (js/console.log e)
-        (if-not (nil? callback) (callback e))))))
+        (if callback (callback e))))))
 
 (defn getAccounts [& {:keys [callback]}]
   (let [avatar (r/cursor app-state [:avatar])
@@ -115,11 +115,11 @@
             (reset! avatar
               (parseAvatarUrl
                 (js->clj (first result))))))
-        (if-not (nil? callback) (callback result)))
+        (if callback (callback result)))
       (fn [e]
         (js/console.log "getAccounts error")
         (js/console.log e)
-        (if-not (nil? callback) (callback e))))))
+        (if callback (callback e))))))
 
 (defn is-article-active [article]
   (let [cashout (js/Date. (get article "cashout_time"))
@@ -173,7 +173,7 @@
                       :text-align "center"
                       :background "silver"}}
         hour])]]])
-    
+
 
 (defn votes-pane [article-id]
   (let [articles (r/cursor app-state [:articles])
