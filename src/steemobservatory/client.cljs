@@ -12,7 +12,6 @@
   (r/atom {:articles []
            :avatar ""
            :account {}
-           :user-editing false
            :user-name "crypticwyrm"
            :show-reblogged true
            :dynamic-global-properties {}
@@ -303,10 +302,10 @@
 (defn user-box []
   (let [avatar (r/cursor app-state [:avatar])
         account (r/cursor app-state [:account])
-        user-editing (r/cursor app-state [:user-editing])
         user-name (r/cursor app-state [:user-name])
         selected-article (r/cursor app-state [:selected-article])
-        user-name-input (r/atom "")]
+        user-name-input (r/atom "")
+        user-editing (r/atom false)]
     (fn []
       [:div {:class "user-box"}
        [:div {:class "user-avatar"}
