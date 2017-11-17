@@ -277,7 +277,8 @@
        [:span {:class "worth"}
         worth]
        (if active
-         [:span {:class "payout"
+         [:span {:id (str "payout-" (get article "id"))
+                 :class "payout"
                  :title (.toLocaleString (js/Date. (str
                                                      (get article "cashout_time")
                                                      "Z")))}
@@ -410,6 +411,16 @@
 (r/render-component [content]
   (.querySelector js/document "#app"))
 
+(defn time-interval []
+  (let [articles (r/cursor app-state [:articles])]
+    (doseq [article @articles]
+      (let [cashout (js/moment.parseZone (get article "cashout_time"))
+            now (js/moment)
+            active (> (- cashout now) 0)
+            element (.querySelector js/document (str "#payout-" (get article "id")))]
+        (when (and active element)
+          (set! (.-innerText element) (str "Payout " (.fromNow cashout))))))))
+
 (defn global-interval []
   (when (:auto-refresh @app-state)
     (js/console.log "Refreshing global data...")
@@ -427,7 +438,8 @@
 (defn reloadInterval []
   (js/console.log "Starting reload intervals...")
   (js/setTimeout global-interval (* 60000 5))
-  (js/setTimeout user-interval (* 60000 1)))
+  (js/setTimeout user-interval (* 60000 1))
+  (js/setInterval time-interval (* 60000 1)))
 
 (if (empty? (:account @app-state))
   (do
