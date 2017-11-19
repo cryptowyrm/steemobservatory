@@ -272,7 +272,8 @@
        (if reblogged
          "Reblogged: ")
        (get article "title")]
-      [:div
+      [:div {:style {:display "flex"
+                     :align-items "baseline"}}
        [:span {:class "worth"}
         worth]
        (if active
@@ -282,7 +283,18 @@
                                                      (get article "cashout_time")
                                                      "Z")))}
           "Payout "
-          (.fromNow cashout)])]]]))
+          (.fromNow cashout)])
+       [:div {:style {:flex 1}}]
+       [:span {:style {:display "flex"
+                       :color (if (> (get article "children") 0)
+                                "gray"
+                                "lightgray")}}
+        (ic/communication-comment {:style {:height 16
+                                           :width 16}
+                                   :color (if (> (get article "children") 0)
+                                            "gray"
+                                            "lightgray")})
+        (get article "children")]]]]))
 
 (defn list-articles [articles]
   [:div {:class "article-list"}
