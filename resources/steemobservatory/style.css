@@ -20,7 +20,7 @@ body {
   display: flex;
   flex-direction: row;
   position: fixed;
-  top: 65px;
+  top: 64px;
   bottom: 0px;
   left: 0px;
   right: 0px;
@@ -69,6 +69,16 @@ body {
   padding-left: 20px;
   flex: 1;
   overflow-y: auto;
+}
+
+@media (max-width: 500px) {
+  #content #two-pane #left {
+    padding: 0px;
+  }
+  
+  #content #two-pane #right {
+    padding: 0px;
+  }
 }
 
 .user-box {
