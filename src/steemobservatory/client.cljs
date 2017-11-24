@@ -147,34 +147,37 @@
       hours)))
 
 (defn votes-per-hour [article]
-  [:div {:style {:overflow-x "auto"
-                 :background "#eee"
-                 :box-shadow "0px 2px 3px 0 rgba(0, 0, 0, 0.4)"}}
-   [:div {:style {:display "flex"
-                  :flex-direction "row"
-                  :align-items "flex-end"
-                  :height 100}}
-    (for [[index [hour percent]] (map-indexed vector (vote-hours-vec (get article "active_votes")))]
-      ^{:key index}
-      [:div {:style {:height percent
-                     :width 20
-                     :margin-right 5
-                     :flex-shrink 0
-                     :background "blue"}
-             :title hour}])]
-   [:div {:style {:display "flex"
-                  :background "#909090"}}
-    [:div {:style {:display "flex"
-                   :flex-direction "row"
-                   :background "#909090"}}
-     (for [hour (vec (range 24))]
-       ^{:key hour}
-       [:div {:style {:width 20
-                      :margin-right 5
-                      :flex-shrink 0
-                      :text-align "center"
-                      :background "silver"}}
-        hour])]]])
+  (let [post-hour (mod (+ (-> (get article "created") js/Date. .getHours) 1) 24)]
+    [:div {:style {:overflow-x "auto"
+                   :background "#eee"
+                   :box-shadow "0px 2px 3px 0 rgba(0, 0, 0, 0.4)"}}
+     [:div {:style {:display "flex"
+                    :flex-direction "row"
+                    :align-items "flex-end"
+                    :height 100}}
+      (for [[index [hour percent]] (map-indexed vector (vote-hours-vec (get article "active_votes")))]
+        ^{:key index}
+        [:div {:style {:height percent
+                       :width 20
+                       :margin-right 5
+                       :flex-shrink 0
+                       :background "blue"}
+               :title hour}])]
+     [:div {:style {:display "flex"
+                    :background "#909090"}}
+      [:div {:style {:display "flex"
+                     :flex-direction "row"
+                     :background "#909090"}}
+       (for [hour (vec (range 24))]
+         ^{:key hour}
+         [:div {:style {:width 20
+                        :margin-right 5
+                        :flex-shrink 0
+                        :text-align "center"
+                        :background (if (= post-hour hour)
+                                      "#72dd72"
+                                      "silver")}}
+          hour])]]]))
 
 
 (defn votes-pane [article-id]
@@ -187,7 +190,9 @@
      [:h2 "Votes"]
      [:p
       "Votes the selected post received during the 24 hours of the day.
-      This helps you see which hours are the most active for your posts."]
+      This helps you see which hours are the most active for your posts.
+      The hour in which the post was posted is highlighted in "
+      [:span {:style {:background "#72dd72"}} "green"] "."]
      [votes-per-hour article]
      [:p
       "This shows a list of all the "
