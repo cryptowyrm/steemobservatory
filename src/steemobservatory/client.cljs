@@ -399,7 +399,7 @@
        [ui/app-bar
         {:title "Steem Observatory"
          :show-menu-icon-button (and @selected-article
-                                     (< @width 500))
+                                     (< @width 800))
          :icon-element-left (r/as-element
                               [ui/icon-button {:on-click (fn []
                                                            (reset! selected-article nil))}
@@ -427,7 +427,7 @@
          [:div {:id "left"
                 :style {:display (when
                                    (and
-                                        (< @width 500)
+                                        (< @width 800)
                                         @selected-article)
                                    "none")}}
           [user-box]
