@@ -30,6 +30,7 @@ body {
   padding: 20px;
   flex: 1;
   overflow-y: auto;
+  transition: padding 0.25s;
 }
 
 .pane {
@@ -69,6 +70,7 @@ body {
   padding-left: 20px;
   flex: 1;
   overflow-y: auto;
+  transition: padding 0.25s;
 }
 
 @media (max-width: 500px) {
