@@ -16,7 +16,9 @@
            :show-reblogged true
            :dynamic-global-properties {}
            :selected-article nil
-           :auto-refresh false}))
+           :auto-refresh false
+           :window {:width 0
+                    :height 0}}))
 
 (defn loadSettings []
   (if-let [storage (js/localStorage.getItem "settings")]
@@ -385,42 +387,68 @@
 
 ; Example with various components
 (defn header []
-  [:div
-   [ui/app-bar
-    {:title "Steem Observatory"
-     :show-menu-icon-button false
-     :icon-element-right (r/as-element
-                           [:a {:target "_blank"
-                                :href "https://steemit.com/created/steemobservatory"}
-                            [ui/icon-button
-                             (ic/action-help {:color :white})]])}]])
+  (let [selected-article (r/cursor app-state [:selected-article])
+        width (r/cursor app-state [:window :width])]
+    (fn []
+      [:div
+       [ui/app-bar
+        {:title "Steem Observatory"
+         :show-menu-icon-button (and @selected-article
+                                     (< @width 500))
+         :icon-element-left (r/as-element
+                              [ui/icon-button {:on-click (fn []
+                                                           (reset! selected-article nil))}
+                               (ic/navigation-arrow-back {:color :white})])
+         :icon-element-right (r/as-element
+                               [:a {:target "_blank"
+                                    :href "https://steemit.com/created/steemobservatory"}
+                                [ui/icon-button
+                                 (ic/action-help {:color :white})]])}]])))
 
 (defn content []
   (let [articles (r/cursor app-state [:articles])
         user-name (r/cursor app-state [:user-name])
         selected-article (r/cursor app-state [:selected-article])
-        show-reblogged (r/cursor app-state [:show-reblogged])]
-    [ui/mui-theme-provider
-     {:mui-theme (get-mui-theme
-                   {:palette {:primary1-color (color :indigo500)
-                              :canvas-color (color :grey300)}})}
-     [:div {:id "content"}
-      [header]
-      [ui/paper {:id "two-pane"}
-       [:div {:id "left"}
-        [user-box]
-        [list-settings]
-        [list-articles (if @show-reblogged
-                         @articles
-                         (filterv
-                           #(= (get % "author") @user-name)
-                           @articles))]]
-       (if-not (nil? @selected-article)
-         [:div {:id "right"}
-          [votes-pane @selected-article]])]]]))
+        show-reblogged (r/cursor app-state [:show-reblogged])
+        width (r/cursor app-state [:window :width])]
+    (fn []
+      [ui/mui-theme-provider
+       {:mui-theme (get-mui-theme
+                     {:palette {:primary1-color (color :indigo500)
+                                :canvas-color (color :grey300)}})}
+       [:div {:id "content"}
+        [header]
+        [ui/paper {:id "two-pane"}
+         [:div {:id "left"
+                :style {:display (when
+                                   (and
+                                        (< @width 500)
+                                        @selected-article)
+                                   "none")}}
+          [user-box]
+          [list-settings]
+          [list-articles (if @show-reblogged
+                           @articles
+                           (filterv
+                             #(= (get % "author") @user-name)
+                             @articles))]]
+         (if-not (nil? @selected-article)
+           [:div {:id "right"}
+            [votes-pane @selected-article]])]]])))
 
 (r/render-component [content]
   (.querySelector js/document "#app"))
+
+(defn set-window-size []
+  (let [width (r/cursor app-state [:window :width])
+        height (r/cursor app-state [:window :height])]
+    (reset! width (-> js/document .-documentElement .-clientWidth))
+    (reset! height (-> js/document .-documentElement .-clientHeight))))
+
+(defn addSizeEvent []
+  ; initial call
+  (set-window-size)
+  (.addEventListener js/window "resize" set-window-size))
 
 (defn time-interval []
   (let [articles (r/cursor app-state [:articles])]
@@ -458,4 +486,5 @@
     (getDynamicGlobalProperties)
     (getAccounts)
     (getDiscussions)
-    (reloadInterval)))
+    (reloadInterval)
+    (addSizeEvent)))
