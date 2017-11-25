@@ -406,7 +406,7 @@
                                (ic/navigation-arrow-back {:color :white})])
          :icon-element-right (r/as-element
                                [:a {:target "_blank"
-                                    :href "https://steemit.com/created/steemobservatory"}
+                                    :href "./info.html"}
                                 [ui/icon-button
                                  (ic/action-help {:color :white})]])}]])))
 
