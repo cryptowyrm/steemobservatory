@@ -1,6 +1,6 @@
 # Steem Observatory
 
-Steem Observatory is a small analytics dashboard for Steem written in ClojureScript and Reagent that aims to be very easy to use, not just for power users but for the average user of Steem.
+Steem Observatory is a small analytics dashboard for [Steem](https://www.steemit.com) written in [ClojureScript](https://clojurescript.org/) and [Reagent](https://reagent-project.github.io/) that aims to be very easy to use, not just for power users but for the average user of Steem.
 
 You can view it as a big website covering the whole screen and showing data in a split view, or you can make the window very narrow and move it to the side like a sidebar to have it open 24/7 on your screen, giving you a live updating view on the current state of your Steem account. The design is responsive so all you need to do to switch between the two modes is resize the browser window.
 
