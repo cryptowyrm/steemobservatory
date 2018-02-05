@@ -390,7 +390,6 @@
                                (reset! auto-refresh (-> e .-target .-checked))
                                (saveSettings))}]]]))
 
-; Example with various components
 (defn header []
   (let [selected-article (r/cursor app-state [:selected-article])
         width (r/cursor app-state [:window :width])]
