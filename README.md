@@ -15,7 +15,3 @@ To build this project you will need to install [the JDK](http://www.oracle.com/t
 To run this app for development, do `boot run`. To compile for production, do `boot build-simple`.
 
 The Nightlight programming environment is started when you run the development server, so if you don't have a favorite Clojure text editor yet, you can just go to http://localhost:4000 in your browser and edit the code there, together with a live REPL, code completion, Parinfer and everything else you'd want from a Clojure development environment, with zero configuration needed. The majority of the code in this project was written using Nightlight.
-
-## License
-
-See the file LICENSE for the license of this project (MIT license). The libraries used in this project have their own license files you should look at. The [dsteem](https://github.com/jnordberg/dsteem) library is included in this repository for convenience, it is licensed under a modified 3-clause BSD license with a paragraph added to exclude the use of the software for the creation or maintenance of military facilities.

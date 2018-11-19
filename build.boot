@@ -1,28 +1,25 @@
 (set-env!
   :source-paths #{"src"}
-  :dependencies '[[adzerk/boot-cljs "2.1.4" :scope "test"]
-                  [adzerk/boot-reload "0.5.2" :scope "test"]
+  :dependencies '[[adzerk/boot-cljs "2.1.5" :scope "test"]
+                  [adzerk/boot-reload "0.6.0" :scope "test"]
                   [org.clojure/test.check "0.9.0" :scope "test"]
-                  [nightlight "1.9.3" :scope "test"]
+                  [nightlight "2.3.2" :scope "test"]
                   ; project deps
-                  [org.clojure/clojure "1.9.0-beta4"]
-                  [org.clojure/clojurescript "1.9.946"]
-                  [org.clojure/core.async "0.3.443"]
+                  [org.clojure/clojure "1.9.0"]
+                  [org.clojure/clojurescript "1.10.439"]
+                  [org.clojure/core.async "0.4.474"]
                   [org.clojure/data.json "0.2.6"]
-                  [org.clojure/tools.cli "0.3.5"]
+                  [org.clojure/tools.cli "0.4.1"]
                   [javax.xml.bind/jaxb-api "2.3.0"]
                   [http-kit "2.2.0"]
                   [ring "1.6.2"]
-                  [reagent "0.8.0-alpha2"]
-                  [cljs-react-material-ui "0.2.48"]
-                  [rum "0.10.8"]
-                  [play-cljs "0.10.2"]
-                  [compojure "1.6.0"]
-                  [com.rpl/specter "1.0.4"]
-                  [com.taoensso/sente "1.11.0"]
-                  [org.clojure/java.jdbc "0.7.3"]
-                  [com.h2database/h2 "1.4.196"]
-                  [honeysql "0.9.1"]])
+                  [reagent "0.8.1"]
+                  [cljs-react-material-ui "0.2.50"]
+                  [compojure "1.6.1"]
+                  [com.rpl/specter "1.1.2"]
+                  [com.taoensso/sente "1.13.1"]
+                  [org.clojure/java.jdbc "0.7.8"]
+                  [com.h2database/h2 "1.4.196"]])
 
 (task-options!
   pom {:project 'steemobservatory
